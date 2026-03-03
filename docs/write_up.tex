@@ -1,0 +1,43 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb, graphicx, geometry}
+\geometry{margin=1in}
+
+\title{Heston-Calibrated Risk-Neutral Density Estimation with Dealer Flow Weighting}
+\author{Your Name}
+\date{February 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+Extract risk-neutral probability densities from SPY option chains using the Heston model and characteristic function pricing. Extend standard Breeden-Litzenberger with multi-expiry calibration and gamma/charm flow weighting to emphasize dealer hedging impact.
+
+\section{Methodology}
+\subsection{Heston Model \& Characteristic Function}
+SDEs:
+\begin{align*}
+dS_t &= r S_t dt + \sqrt{v_t} S_t dW_t^S \\
+dv_t &= \kappa (\theta - v_t) dt + \xi \sqrt{v_t} dW_t^v, \quad \langle dW^S, dW^v \rangle = \rho dt
+\end{align*}
+
+Closed-form characteristic function used for pricing via damped P1/P2 Fourier inversion.
+
+\subsection{Multi-Expiry Calibration}
+Minimize weighted IV RMSE across expiries, weighting shorter maturities higher ($1/\tau$) and incorporating |GEX| + |charm| for strike prioritization.
+
+\subsection{PDF Extraction}
+Apply Breeden-Litzenberger: $f_Q(K,\tau) = e^{r\tau} \frac{\partial^2 C}{\partial K^2}$, smoothed via UnivariateSpline.
+
+\section{Results}
+- Achieved IV RMSE $\approx 0.14$ on short-dated SPY chains.
+- PDF peaks near forward price, exhibits mild negative skew consistent with equity crash premium.
+- Interactive dashboard reveals sensitivity of tail thickness and skew to damping ($\alpha$) and grid parameters ($N$, $u_{\max}$).
+
+\includegraphics[width=0.9\textwidth]{your_pdf_plot.png}
+\caption{Risk-neutral PDF (left) and IV smile fit (right) for $\tau \approx 0.024$ (7 DTE).}
+
+\section{Conclusion}
+Demonstrates practical application of stochastic volatility modeling to real option data with flow-aware extensions. Future work: backtest tail-based trading signals.
+
+\end{document}
