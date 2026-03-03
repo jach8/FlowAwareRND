@@ -1,7 +1,10 @@
 import numpy as np
 from scipy.stats import lognorm, skew, kurtosis, kstest, entropy as scipy_entropy
 from scipy.signal import find_peaks
-from scipy.integrate import trapz
+try:
+    from scipy.integrate import trapezoid as trapz
+except ImportError:
+    from scipy.integrate import trapz
 
 def score_pdf_quality(
     K_pdf: np.ndarray,

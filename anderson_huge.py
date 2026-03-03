@@ -5,7 +5,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import UnivariateSpline
-from scipy.integrate import trapz
+try:
+    from scipy.integrate import trapezoid as trapz
+except ImportError:
+    from scipy.integrate import trapz
 from scipy.optimize import minimize
 from scipy.stats import norm
 

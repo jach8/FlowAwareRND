@@ -706,8 +706,8 @@ def heston_call_price_damped(
         integrand1 = np.nan_to_num(integrand1, nan=0.0, posinf=0.0, neginf=0.0)
         integrand2 = np.nan_to_num(integrand2, nan=0.0, posinf=0.0, neginf=0.0)
         
-        P1 = 0.5 + np.trapz(integrand1, phi) / np.pi
-        P2 = 0.5 + np.trapz(integrand2, phi) / np.pi
+        P1 = 0.5 + np.trapezoid(integrand1, phi) / np.pi
+        P2 = 0.5 + np.trapezoid(integrand2, phi) / np.pi
         
         P1 = np.clip(P1, 0.0, 1.0)
         P2 = np.clip(P2, 0.0, 1.0)
@@ -759,8 +759,8 @@ def heston_call_price_vectorized(
     integrand1 = np.nan_to_num(integrand1, nan=0.0, posinf=0.0, neginf=0.0)
     integrand2 = np.nan_to_num(integrand2, nan=0.0, posinf=0.0, neginf=0.0)
     
-    P1 = 0.5 + np.trapz(integrand1, phi, axis=0) / np.pi
-    P2 = 0.5 + np.trapz(integrand2, phi, axis=0) / np.pi
+    P1 = 0.5 + np.trapezoid(integrand1, phi, axis=0) / np.pi
+    P2 = 0.5 + np.trapezoid(integrand2, phi, axis=0) / np.pi
     
     P1 = np.clip(P1, 0.0, 1.0)
     P2 = np.clip(P2, 0.0, 1.0)
@@ -1552,7 +1552,7 @@ class HestonCalibrator:
         pdf = np.exp(r * tau) * second_deriv
         pdf = np.maximum(pdf, 0)
         
-        integral = np.trapz(pdf, fine_strikes)
+        integral = np.trapezoid(pdf, fine_strikes)
         if integral > 0:
             pdf /= integral
         
@@ -1685,7 +1685,7 @@ class HestonCalibrator:
         valid = (strikes > S0 * 0.5) & (strikes < S0 * 1.5) & np.isfinite(pdf_strike) & (pdf_strike > 0)
         
         if np.sum(valid) > 10:
-            integral = np.trapz(pdf_strike[valid], strikes[valid])
+            integral = np.trapezoid(pdf_strike[valid], strikes[valid])
             if integral > 1e-10:
                 pdf_strike = pdf_strike / integral
         
@@ -1814,7 +1814,7 @@ if __name__ == "__main__":
     print("\nExtracting PDF...")
     pdf_strikes, pdf_values = calibrator.extract_pdf_fft(S0, result.params, tau, r)
     valid = (pdf_strikes > 80) & (pdf_strikes < 120)
-    integral = np.trapz(pdf_values[valid], pdf_strikes[valid])
+    integral = np.trapezoid(pdf_values[valid], pdf_strikes[valid])
     print(f"PDF integral: {integral:.4f}")
     
     print("\n" + "=" * 60)
@@ -2111,7 +2111,7 @@ class FlowAwarePDF:
         
         # Renormalize
         if normalize:
-            integral = np.trapz(pdf_adjusted, strikes)
+            integral = np.trapezoid(pdf_adjusted, strikes)
             if integral > 1e-10:
                 pdf_adjusted = pdf_adjusted / integral
         
@@ -2435,7 +2435,7 @@ class FlowAwarePDF:
         
         # Renormalize
         if normalize:
-            integral = np.trapz(pdf_adj, strikes)
+            integral = np.trapezoid(pdf_adj, strikes)
             if integral > 1e-10:
                 pdf_adj = pdf_adj / integral
         
