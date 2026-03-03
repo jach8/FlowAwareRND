@@ -478,7 +478,7 @@ with tab_pdf:
     for col_idx, (label, sk, pk) in enumerate(integral_items):
         if sk is not None and pk is not None:
             v = (sk >= lower) & (sk <= upper) & np.isfinite(pk) & (pk > 0)
-            intg = np.trapezoid(pk[v], sk[v]) if np.any(v) else 0.0
+            intg = np.trapz(pk[v], sk[v]) if np.any(v) else 0.0
             ic_cols[col_idx].metric(label, f"{intg:.4f}")
 
 
