@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def agg_by_strike(option_chain, x = 'strike', y = 'lastprice'):
-    gcdf = option_chain.groupby(['timevalue',x]).agg({
+    agg_dict = {
         'gexp': 'sum', 
         'cexp': 'sum', 
         'vexp': 'sum',
@@ -13,7 +13,12 @@ def agg_by_strike(option_chain, x = 'strike', y = 'lastprice'):
         'oi_chg': 'sum', ## This will be net oi change per strike, so if one strike goes down, the other goes up, the net oi change will be 0.
          y: 'mean',
          'fairvalue': 'mean',
-        'stk_price': 'last'})
+        'stk_price': 'last'
+    }
+    if 'oi_chg' not in option_chain.columns:
+        agg_dict.pop('oi_chg')
+
+    gcdf = option_chain.groupby(['timevalue',x]).agg(agg_dict)
     return gcdf.reset_index()
 
 def get_front_month_chain(option_chain, expiry = None):

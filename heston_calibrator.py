@@ -13,6 +13,9 @@ Uses NumPy for complex arithmetic (reliable) with parallel evaluation via
 joblib/multiprocessing for the optimizer population.
 
 Author: Auto-generated from hc3.py patterns
+
+TODO: Add a RMSE cutoff to the calibration to speed up compute time. If RMSE is less than specified parameter (0.05), we can stop the calibration and use the current parameters.
+
 """
 
 import logging
@@ -901,7 +904,8 @@ def differential_evolution_parallel(
     F: float = 0.7,
     CR: float = 0.85,
     seed: int = 42,
-    n_workers: int = 4
+    n_workers: int = 4,
+    rmse_cutoff: Optional[float] = None
 ) -> Tuple[np.ndarray, float, int]:
     """
     Parallel Differential Evolution optimizer.
@@ -928,8 +932,13 @@ def differential_evolution_parallel(
     best_idx = np.argmin(fitness)
     best_params = population[best_idx].copy()
     best_fitness = fitness[best_idx]
+    threshold = rmse_cutoff if rmse_cutoff is not None else 1e-4
     
     logger.info(f"DE initial best fitness: {best_fitness:.6f}")
+    
+    # Early exit if initial population already meets target RMSE
+    if best_fitness <= threshold:
+        return best_params, best_fitness, 0
     
     # Main DE loop
     trial_pop = np.zeros((pop_size, n_params))
@@ -981,8 +990,8 @@ def differential_evolution_parallel(
         if (iteration + 1) % 20 == 0:
             logger.info(f"DE iteration {iteration + 1}: best={best_fitness:.6f}")
         
-        # Early stopping
-        if best_fitness < 1e-4:
+        # Early stopping based on RMSE cutoff
+        if best_fitness <= threshold:
             return best_params, best_fitness, iteration + 1
     
     return best_params, best_fitness, max_iter
@@ -1029,7 +1038,8 @@ class HestonCalibrator:
     def __init__(
         self,
         N: int = 2048,
-        umax: float = 150.0
+        umax: float = 150.0,
+        rmse_cutoff: float = 0.05
     ):
         """
         Initialize Heston calibrator.
@@ -1050,6 +1060,7 @@ class HestonCalibrator:
         """
         self.N = N
         self.umax = umax
+        self.rmse_cutoff = rmse_cutoff
         self._last_market_ivs: Optional[np.ndarray] = None
         self._last_model_ivs: Optional[np.ndarray] = None
     
@@ -1301,7 +1312,8 @@ class HestonCalibrator:
                 S0, strikes, market_ivs, tau, r, q,
                 self.N, self.umax,
                 weights, valid_mask, b,
-                pop_size, max_iter, F, CR, seed, n_workers
+                pop_size, max_iter, F, CR, seed, n_workers,
+                rmse_cutoff=self.rmse_cutoff
             )
             
             # Compute final model IVs
@@ -1437,6 +1449,8 @@ class HestonCalibrator:
             logger.info(f"Numba DE initial best fitness: {best_fitness:.6f}")
             
             # Main DE loop using Numba
+            completed_iterations = 0
+            rmse_cutoff = getattr(self, "rmse_cutoff", 1e-4)
             for iteration in range(max_iter):
                 population, fitness = _numba_de_iteration(
                     population, fitness, S0, strikes, market_ivs,
@@ -1448,8 +1462,14 @@ class HestonCalibrator:
                 if current_best < best_fitness:
                     best_fitness = current_best
                 
+                completed_iterations = iteration + 1
+                
                 if (iteration + 1) % 20 == 0:
                     logger.info(f"Numba DE iteration {iteration+1}: best={best_fitness:.6f}")
+                
+                # Early stopping when RMSE target is reached
+                if best_fitness <= rmse_cutoff:
+                    break
             
             # Get best solution
             best_idx = np.argmin(fitness)
@@ -1473,13 +1493,13 @@ class HestonCalibrator:
                 sigma_j=0.0
             )
             
-            logger.info(f"Numba calibration complete. RMSE={best_fitness:.6f}, iter={max_iter}")
+            logger.info(f"Numba calibration complete. RMSE={best_fitness:.6f}, iter={completed_iterations}")
             
             return CalibrationResult(
                 params=params,
                 rmse=best_fitness,
                 success=best_fitness < 1.0,
-                iterations=max_iter,
+                iterations=completed_iterations,
                 message="Numba calibration successful"
             )
             
